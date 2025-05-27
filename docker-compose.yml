@@ -1,0 +1,19 @@
+services:
+  app:
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8002:8000"
+    env_file:
+      - .env
+    environment:
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL}
+      - LLM_MODEL=${LLM_MODEL}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=${AWS_REGION}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME}
+      - S3_ENV_FOLDER=${S3_ENV_FOLDER}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}

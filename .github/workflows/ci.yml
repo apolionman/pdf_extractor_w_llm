@@ -1,0 +1,44 @@
+name: Deploy to Local
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy_to_local:
+    runs-on: [dgx-2]
+
+    steps:
+      - name: Checkout latest code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: |
+          docker build -t pdf_extractor_llm:dev -f Dockerfile.dev .
+
+      - name: Stop and delete previous container
+        run: |
+          docker stop pdf_extractor_llm || true
+          docker rm pdf_extractor_llm || true
+
+      - name: Run Docker container
+        env:
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          API_KEY: ${{ secrets.API_KEY }}
+          OPEN_API_KEY: ${{ secrets.OPEN_API_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          OLLAMA_BASE_URL: ${{ secrets.OLLAMA_BASE_URL }}
+        run: |
+          docker run -d --gpus all \
+            -e SECRET_KEY="$SECRET_KEY" \
+            -e API_KEY="$API_KEY" \
+            -e OPEN_API_KEY="$OPEN_API_KEY" \
+            -e DATABASE_URL="$DATABASE_URL" \
+            -e OLLAMA_BASE_URL="$OLLAMA_BASE_URL" \
+            -p 8002:8000 \
+            --name pdf_extractor_llm \
+            pdf_extractor_llm:dev
+
+    environment:
+      name: development

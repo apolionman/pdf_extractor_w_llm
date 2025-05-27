@@ -1,0 +1,75 @@
+# Core settings and validation
+pydantic
+pydantic-settings
+
+# FastAPI web server
+fastapi
+uvicorn[standard]
+python-multipart
+jinja2
+aiofiles
+httpx
+starlette
+email-validator
+python-dotenv
+pandas
+
+# Authentication and security
+python-jose[cryptography]
+passlib[bcrypt]
+
+# System and utility tools
+python-dotenv
+loguru
+tenacity
+tqdm
+uuid
+nest-asyncio
+pyyaml
+
+# Text parsing and model use
+PyMuPDF
+pdfminer.six
+pdf2image
+transformers
+sentence-transformers
+langchain
+langchain-ollama
+langchain-community
+openai
+anthropic
+tiktoken
+
+# Math / data handling
+numpy
+pandas
+scikit-learn
+
+# OCR and NLP (used in PDF processing)
+spacy
+nltk
+pytesseract
+paddlepaddle==2.5.2 -f https://www.paddlepaddle.org.cn/whl/macos.html
+paddleocr
+easyocr
+
+# Database
+sqlalchemy
+alembic
+asyncpg
+motor
+pymongo
+redis[hiredis]
+qdrant-client
+boto3
+
+# Monitoring / instrumentation
+prometheus-client
+opentelemetry-api
+opentelemetry-sdk
+opentelemetry-instrumentation-fastapi
+sentry-sdk[fastapi]
+
+# Vector DB
+chromadb
+faiss-cpu
