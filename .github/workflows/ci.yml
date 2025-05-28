@@ -26,6 +26,8 @@ jobs:
         env:
           OPEN_API_KEY: ${{ secrets.OPEN_API_KEY }}
           OLLAMA_BASE_URL: ${{ secrets.OLLAMA_BASE_URL }}
+          EMBEDDING_MODEL: ${{ secrets.EMBEDDING_MODEL }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
         run: |
           docker run -d --gpus all \
             -e OPEN_API_KEY="$OPEN_API_KEY" \
