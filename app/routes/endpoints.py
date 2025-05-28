@@ -29,7 +29,7 @@ async def extract_pdf(
 
         try:
             # Run your summarization logic
-            genetiq_summarized = await summarization(file_path)
+            genetiq_summarized = await summarization(out_file)
             summaries.append({
                 "filename": file.filename,
                 "summary": genetiq_summarized
