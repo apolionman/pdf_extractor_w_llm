@@ -28,7 +28,7 @@ nest-asyncio
 pyyaml
 
 # Text parsing and model use
-PyMuPDF
+pymupdf
 pdfminer.six
 pdf2image
 transformers
@@ -39,7 +39,6 @@ langchain-community
 openai
 anthropic
 tiktoken
-fitz
 python-docx
 
 # Math / data handling
