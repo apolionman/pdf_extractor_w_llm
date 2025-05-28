@@ -39,13 +39,13 @@ def get_text_from_pdf_paddle(pdf_path: str) -> Tuple[str, str]:
     """
 
     doc = fitz.open(pdf_path)
-    print(doc)
-    print("[DEBUG] Number of page => ", len(doc))
+
     detected_text = []
     for page_num in tqdm(range(len(doc)), desc="Converting PDF pages to images"):
         if page_num + 1 > PROC_PAGE_LIMIT:
             break
         page = doc.load_page(page_num)
+        print("[DEBUG] checking page ", page)
         pix = page.get_pixmap()
         img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
         img_np = np.array(img).astype('uint8')
@@ -74,7 +74,6 @@ def get_text_from_pdf_paddle(pdf_path: str) -> Tuple[str, str]:
         f.write(combined_text)
 
     return combined_text, txt_file_path
-
 
 def get_text_from_image_paddle(image_path):
 

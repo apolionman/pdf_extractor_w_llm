@@ -23,19 +23,16 @@ async def extract_pdf(
         tmpdir = tempfile.mkdtemp()
         file_path = os.path.join(tmpdir, file.filename)
 
-        # Save the uploaded file to disk
         with open(file_path, "wb") as out_file:
             shutil.copyfileobj(file.file, out_file)
 
         try:
-            # Run your summarization logic
-            genetiq_summarized = await summarization(out_file)
+            genetiq_summarized = await summarization(file_path)
             summaries.append({
                 "filename": file.filename,
                 "summary": genetiq_summarized
             })
         finally:
-            # Clean up the temp directory
             shutil.rmtree(tmpdir, ignore_errors=True)
 
     return {"summaries": summaries}
