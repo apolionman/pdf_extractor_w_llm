@@ -30,8 +30,10 @@ jobs:
           LLM_MODEL: ${{ secrets.LLM_MODEL }}
         run: |
           docker run -d --gpus all \
-            -e OPEN_API_KEY="$OPEN_API_KEY" \
-            -e OLLAMA_BASE_URL="$OLLAMA_BASE_URL" \
+            -e OPEN_API_KEY="%OPEN_API_KEY%" \
+            -e OLLAMA_BASE_URL="%OLLAMA_BASE_URL%" \
+            -e EMBEDDING_MODEL="%EMBEDDING_MODEL%" \
+            -e LLM_MODEL="%LLM_MODEL%" \
             -p 8002:8000 \
             --name pdf_extractor_llm \
             pdf_extractor_llm:dev
