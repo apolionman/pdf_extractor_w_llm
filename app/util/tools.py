@@ -62,8 +62,11 @@ def get_text_from_pdf_paddle(pdf_path: str) -> Tuple[str, str]:
 
     combined_text = ' '.join(detected_text)
 
+    output_dir = "output"
+    os.makedirs(output_dir, exist_ok=True)
+
     base_name = os.path.splitext(os.path.basename(pdf_path))[0]
-    txt_file_path = os.path.join("output", f"{base_name}.txt")
+    txt_file_path = os.path.join(output_dir, f"{base_name}.txt")
 
     with open(txt_file_path, 'w', encoding='utf-8') as f:
         f.write(combined_text)
@@ -85,10 +88,17 @@ def get_text_from_image_paddle(image_path):
 
     output_dir = "output"
     os.makedirs(output_dir, exist_ok=True)
+    
+    print("[DEBUG] check output directory => ", output_dir)
 
     # Save combined text to file for testing....
     base_name = os.path.splitext(os.path.basename(image_path))[0]
+
+    print("[DEBUG] check base name => ", base_name)
+
     txt_file_path = os.path.join(output_dir, f"{base_name}.txt")
+
+    print("[DEBUG] check file => ", txt_file_path)
 
     with open(txt_file_path, 'w', encoding='utf-8') as f:
         f.write(combined_text)
