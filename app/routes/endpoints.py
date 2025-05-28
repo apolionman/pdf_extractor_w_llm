@@ -6,23 +6,30 @@ router = APIRouter()
 
 @router.post("/extract-pdf")
 async def extract_pdf(
-        files: List[UploadFile] = File(
-        ...,
-        description="Upload your pdf file here."
-    ),
-        ):
-    
+    files: List[UploadFile] = File(..., description="Upload your pdf file here.")
+):
     tmpdir = tempfile.mkdtemp()
-    print(tmpdir)
+    print("[DEBUG] Temp directory:", tmpdir)
 
     for file in files:
         file_ext = os.path.splitext(file.filename)[-1].lower()
-        if file.content_type != ".pdf":
+
+        # Option 1: Check content type
+        if file.content_type != "application/pdf":
             raise HTTPException(
                 status_code=400,
-                detail=f"Invalid file '{file.filename}'. Only .pdf is allowed."
+                detail=f"Invalid file '{file.filename}'. Only PDF files are allowed."
             )
-        print("[DEBUG] checking path => ", file_ext)
+
+        # Option 2 (alternative): Check file extension
+        # if file_ext != ".pdf":
+        #     raise HTTPException(
+        #         status_code=400,
+        #         detail=f"Invalid file '{file.filename}'. Only .pdf is allowed."
+        #     )
+
+        print("[DEBUG] Accepted PDF:", file.filename)
+    
 
     # try:
     #     output_dir = os.path.join(tmpdir, "output")
