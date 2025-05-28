@@ -27,17 +27,46 @@ paddle_ocr = PaddleOCR(
 
 def get_text_from_pdf_paddle(pdf_path: str) -> Tuple[str, str]:
     """
-    Extract text from a PDF file using PaddleOCR by converting each page to an image,
-    performing OCR on each image, and combining the extracted text.
-
-    Args:
-        pdf_path (str): Path to the PDF file.
-
-    Returns:
-        combined_text (str): The extracted text combined from all pages.
-        txt_path (str): Path to the saved text file.
+    Improved PDF text extraction that preserves tables and structure better
     """
+    doc = fitz.open(pdf_path)
+    full_text = []
+    
+    for page_num in range(len(doc)):
+        if page_num + 1 > settings.process_page_limit:
+            break
+            
+        page = doc.load_page(page_num)
+        # First try regular text extraction
+        text = page.get_text("text")
+        
+        # If text seems incomplete (e.g., missing tables), fall back to OCR
+        if not text or len(text) < 100:  # Threshold for detecting bad extraction
+            pix = page.get_pixmap()
+            img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+            img_np = np.array(img)
+            ocr_results = paddle_ocr.ocr(img_np, cls=True)
+            text = ' '.join([
+                seg[1][0] 
+                for line in ocr_results if line 
+                for seg in line 
+                if seg and len(seg) > 1 and len(seg[1]) > 0 and seg[1][0]
+            ])
+            
+        full_text.append(text)
 
+    combined_text = '\n\n'.join(full_text)
+    
+    # Save to file
+    base_name = os.path.splitext(os.path.basename(pdf_path))[0]
+    txt_file_path = os.path.join(settings.text_files_dir, f"{base_name}.txt")
+    
+    with open(txt_file_path, 'w', encoding='utf-8') as f:
+        f.write(combined_text)
+        
+    return combined_text, txt_file_path
+
+def get_text_from_pdf_paddle(pdf_path: str) -> Tuple[str, str]:
     doc = fitz.open(pdf_path)
 
     detected_text = []
@@ -45,24 +74,23 @@ def get_text_from_pdf_paddle(pdf_path: str) -> Tuple[str, str]:
         if page_num + 1 > PROC_PAGE_LIMIT:
             break
         page = doc.load_page(page_num)
-        print("[DEBUG] checking page ", page)
-        pix = page.get_pixmap()
-        img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-        img_np = np.array(img).astype('uint8')
+        text = page.get_text("text")
+        
+        if not text or len(text) < 100:
+            pix = page.get_pixmap()
+            img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+            img_np = np.array(img)
+            ocr_results = paddle_ocr.ocr(img_np, cls=True)
+            text = ' '.join([
+                seg[1][0] 
+                for line in ocr_results if line 
+                for seg in line 
+                if seg and len(seg) > 1 and len(seg[1]) > 0 and seg[1][0]
+            ])
+            
+        detected_text.append(text)
 
-        if img_np.ndim != 3:
-            raise ValueError(f"Unexpected image shape: {img_np.shape}")
-
-        ocr_results = paddle_ocr.ocr(img_np, cls=False)
-        print(ocr_results)
-        detected_text = [
-            seg[1][0]
-            for line in ocr_results if line
-            for seg in line
-            if seg and len(seg) > 1 and len(seg[1]) > 0 and seg[1][0]
-        ]
-
-    combined_text = ' '.join(detected_text)
+    combined_text = '\n\n'.join(detected_text)
 
     output_dir = "output"
     os.makedirs(output_dir, exist_ok=True)
