@@ -29,18 +29,10 @@ def get_text_from_pdf_paddle(pdf_path: str) -> Tuple[str, str]:
     """
     Extract text from a PDF file using PaddleOCR by converting each page to an image,
     performing OCR on each image, and combining the extracted text.
-
-    Args:
-        pdf_path (str): Path to the PDF file.
-
-    Returns:
-        combined_text (str): The extracted text combined from all pages.
-        txt_path (str): Path to the saved text file.
     """
-
     doc = fitz.open(pdf_path)
-
     detected_text = []
+
     for page_num in tqdm(range(len(doc)), desc="Converting PDF pages to images"):
         if page_num + 1 > PROC_PAGE_LIMIT:
             break
@@ -53,12 +45,14 @@ def get_text_from_pdf_paddle(pdf_path: str) -> Tuple[str, str]:
             raise ValueError(f"Unexpected image shape: {img_np.shape}")
 
         ocr_results = paddle_ocr.ocr(img_np, cls=False)
-        detected_text = [
+
+        page_text = [
             seg[1][0]
             for line in ocr_results if line
             for seg in line
             if seg and len(seg) > 1 and len(seg[1]) > 0 and seg[1][0]
         ]
+        detected_text.extend(page_text)  # <- Accumulate text
 
     combined_text = ' '.join(detected_text)
 
