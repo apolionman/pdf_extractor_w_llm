@@ -10,14 +10,14 @@ from PIL import Image
 from tqdm import tqdm
 from typing import Tuple
 
-os.environ["CUDA_VISIBLE_DEVICES"] = ""
-os.environ["FLAGS_use_cuda"] = "0"
-os.environ["FLAGS_selected_gpus"] = "-1"
+# os.environ["CUDA_VISIBLE_DEVICES"] = ""
+# os.environ["FLAGS_use_cuda"] = "0"
+# os.environ["FLAGS_selected_gpus"] = "-1"
 PROC_PAGE_LIMIT = 2
 
-paddle.set_device('cpu')
+# paddle.set_device('cpu')
 
-use_gpu=False
+use_gpu=True
 paddle_ocr = PaddleOCR(
     use_angle_cls=True,
     lang='en',

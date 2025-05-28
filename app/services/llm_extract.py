@@ -44,38 +44,35 @@ llm = OllamaLLM(
 )
 
 pdf_system_prompt = """
-You are an AI data extractor for clinical and wearable health technology documents. Your task is to extract **only explicitly stated** information from the text related to the following **targeted keyword fields**, and output the result in a **CSV-compatible structure** (each field as a string, one row per document). Do not make assumptions or add inferred content. Use "not specified" if the information is missing or not clearly mentioned.
+You are an AI data extractor for clinical and wearable health technology documents. Your task is to extract **only explicitly stated** information from the text related to the following **targeted keyword fields**, and output the result in a **flat JSON object** format (field-value pairs). Do not make assumptions or add inferred content. Use "not specified" if the information is missing or not clearly mentioned.
 
-Target fields (CSV headers):
-Wearable Biosensor
-Healthcare Monitoring
-Biomarker
-Biological Fluids
-Physiological Conditions
-Wearable
-Biomarkers
-Conditions
-Associated Conditions
-Monitoring
-Sensors
-Device Type
-Device Brand
-Device Model
-Monitoring Features
-Sensors Used
-FDA Status/Year/AP (AP: Accuracy Percentage)
-Devices
-Accuracy
-Physiological Parameters
+Target fields (JSON keys):
+{{
+    "wearable_biosensor": "string",
+    "healthcare_monitoring": "string",
+    "biomarkers": "[...]",
+    "bioligical_fluids": "[...]",
+    "physiological_conditions": "[...]",
+    "associated_conditions": "[...]",
+    "monitoring_methods": "[...]",
+    "wearable_sensors": "[...]",
+    "device_type": "[...]",
+    "device_brand": "[...]",
+    "device_model": "string",
+    "monitoring_features": "[...]",
+    "accuracy": "string",
+    "physiological_parameters": "[...]"
+}}
 
 RULES:
 - Only use exact terms or values directly from the document.
-- For FDA Status/Year/AP, extract all 3 if present; otherwise return "not specified".
+- For "FDA Status/Year/AP", extract all 3 components if present; otherwise return "not specified".
 - Always return a value for every keyword field, using "not specified" if missing.
-- Output data in flat CSV format: one line per document, values separated by commas, no nested JSON or lists.
+- Output a single flat JSON object per document, with each key corresponding to a field name and its value as a string.
+- Do not return nested objects, arrays, or any content outside the JSON object.
 """
 
-user_prompt = "Extract the listed keyword-based medical device information from the document in CSV format. Use 'not specified' where information is missing."
+user_prompt = "Extract the listed keyword-based medical device information from the document in flat JSON format. Use 'not specified' where information is missing. Do not infer data."
 
 pdf_prompt_template = ChatPromptTemplate.from_messages([
     ("system", pdf_system_prompt),
@@ -139,19 +136,16 @@ def clean_trailing_commas(json_like_str: str) -> str:
     cleaned = re.sub(r",(\s*[}\]])", r"\1", json_like_str)
     return cleaned
 
-import csv
-import io
-
 async def summarization(file_path):
     """
     Main summary function.
-    Extracts structured health technology information from a PDF and returns it in CSV format.
+    Extracts structured health technology information from a PDF and returns it in JSON format.
     """
     if not isinstance(file_path, str):
         raise TypeError(f"Invalid file_path type: expected str, got {type(file_path)} — value: {file_path}")
 
-    csv_output = ""
-    
+    summary_json = {}
+
     if file_path.endswith(".pdf"):
         doc_text, doc_text_path = get_text_from_pdf_paddle(file_path)
 
@@ -167,15 +161,9 @@ async def summarization(file_path):
                 summary_parsed = json.loads(summary_raw)
 
                 if not isinstance(summary_parsed, dict):
-                    raise ValueError("[ERROR] Expected a flat dictionary for CSV generation.")
+                    raise ValueError("[ERROR] Expected a flat dictionary as JSON output.")
 
-                # Write to CSV in memory
-                output = io.StringIO()
-                writer = csv.DictWriter(output, fieldnames=summary_parsed.keys())
-                writer.writeheader()
-                writer.writerow(summary_parsed)
-
-                csv_output = output.getvalue()
+                summary_json = summary_parsed
 
             except json.JSONDecodeError as err:
                 print(f"[WARNING] JSON parsing failed: {err}")
@@ -183,12 +171,10 @@ async def summarization(file_path):
                 try:
                     summary_parsed = json.loads(cleaned_raw)
 
-                    output = io.StringIO()
-                    writer = csv.DictWriter(output, fieldnames=summary_parsed.keys())
-                    writer.writeheader()
-                    writer.writerow(summary_parsed)
+                    if not isinstance(summary_parsed, dict):
+                        raise ValueError("[ERROR] Cleaned JSON still not a dictionary.")
 
-                    csv_output = output.getvalue()
+                    summary_json = summary_parsed
 
                     print("[INFO] ✅ Successfully parsed after cleaning trailing commas.")
                 except Exception as fallback_err:
@@ -200,4 +186,4 @@ async def summarization(file_path):
 
             shutil.rmtree(doc_vector_db)
 
-    return csv_output
+    return summary_json
