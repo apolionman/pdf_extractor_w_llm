@@ -4,7 +4,7 @@ import tempfile, os
 
 router = APIRouter()
 
-@router.get("/extract-pdf")
+@router.post("/extract-pdf")
 async def extract_pdf(
         files: List[UploadFile] = File(
         ...,
@@ -23,7 +23,7 @@ async def extract_pdf(
                 detail=f"Invalid file '{file.filename}'. Only .pdf is allowed."
             )
         print("[DEBUG] checking path => ", file_ext)
-        
+
     # try:
     #     output_dir = os.path.join(tmpdir, "output")
     #     os.makedirs(output_dir, exist_ok=True)
