@@ -9,13 +9,11 @@ router = APIRouter()
 async def extract_pdf(
     files: List[UploadFile] = File(..., description="Upload your pdf file here.")
 ):
-    tmpdir = tempfile.mkdtemp()
-    print("[DEBUG] Temp directory:", tmpdir)
-
     for file in files:
+        tmpdir = tempfile.mkdtemp()
         file_ext = os.path.splitext(file.filename)[-1].lower()
-
-        if file.content_type != "application/pdf":
+        print("[DEBUG] This is the content =>",file.content_type)
+        if file_ext == ".pdf":
             file_path = os.path.join(tmpdir, file.filename)
             genetiq_summarized = await summarization(file_path)
             print(genetiq_summarized) 
@@ -23,7 +21,7 @@ async def extract_pdf(
             raise HTTPException(
                 status_code=400,
                 detail=f"Invalid file '{file.filename}'. Only PDF files are allowed."
-            )
+            )   
 
         if file_ext != ".pdf":
             raise HTTPException(
@@ -32,16 +30,3 @@ async def extract_pdf(
             )
         
         shutil.rmtree(tmpdir, ignore_errors=True)
-
-        print("[DEBUG] Accepted PDF:", file.filename)
-    
-
-    # try:
-    #     output_dir = os.path.join(tmpdir, "output")
-    #     os.makedirs(output_dir, exist_ok=True)
-    #     genetiq_summarized = await summarization(pdf_local_path)        
-        
-    # except Exception as e:
-    #     print(f"failed: {e}")
-    # finally:
-    #     shutil.rmtree(tmpdir, ignore_errors=True)
