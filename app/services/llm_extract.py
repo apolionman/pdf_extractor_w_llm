@@ -19,7 +19,7 @@ OLLAMA_BASE_URL=os.getenv("OLLAMA_BASE_URL")
 LLM_MODEL=os.getenv("LLM_MODEL")
 EMBEDDING_MODEL=os.getenv("EMBEDDING_MODEL")
 
-# embedding_model = SentenceTransformer(EMBEDDING_MODEL)
+embedding_model = SentenceTransformer(EMBEDDING_MODEL)
 
 class SentenceTransformersEmbeddings(Embeddings):
     def __init__(self, model_name: str = EMBEDDING_MODEL):
