@@ -5,7 +5,7 @@ ENV PYTHONUNBUFFERED 1
 
 WORKDIR /app
 
-RUN apt update && apt install -y curl && apt-get install -y gcc ccache 
+RUN apt update && apt install -y curl && apt-get install -y gcc ccache && apt-get install -y libgl1 libglib2.0-0
 
 COPY requirements.txt ./
 RUN pip install --no-cache-dir --prefer-binary -r requirements.txt
@@ -16,4 +16,4 @@ COPY . .
 
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
