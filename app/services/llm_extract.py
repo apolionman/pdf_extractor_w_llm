@@ -76,7 +76,7 @@ user_prompt = "Extract the listed keyword-based medical device information from 
 
 pdf_prompt_template = ChatPromptTemplate.from_messages([
     ("system", pdf_system_prompt),
-    ("human", "{input}")
+    ("human", "{context}")
 ])
 
 
@@ -128,7 +128,7 @@ def retrieve_info(vector_db_path, user_prompt, prompt_template):
     stuff_documents_chain = create_stuff_documents_chain(llm, prompt_template)
     rag_chain = create_retrieval_chain(retriever, stuff_documents_chain)
 
-    response = rag_chain.invoke({"input": user_prompt})["answer"]
+    response = rag_chain.invoke({"context": user_prompt})["answer"]
     return response
 
 def clean_trailing_commas(json_like_str: str) -> str:
