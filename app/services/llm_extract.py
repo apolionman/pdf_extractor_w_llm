@@ -20,9 +20,8 @@ LLM_MODEL=os.getenv("LLM_MODEL")
 EMBEDDING_MODEL=os.getenv("EMBEDDING_MODEL")
 VECTOR_FILES_DIR=os.getenv("VECTOR_FILES_DIR")
 
-embedding_model = SentenceTransformer(EMBEDDING_MODEL)
+# embedding_model = SentenceTransformer(EMBEDDING_MODEL)
 
-# 1) Create a local embedding model for vector stores
 class SentenceTransformersEmbeddings(Embeddings):
     def __init__(self, model_name: str = EMBEDDING_MODEL):
         self.model = SentenceTransformer(model_name, trust_remote_code=True)
@@ -35,11 +34,8 @@ class SentenceTransformersEmbeddings(Embeddings):
         """Encode a single text (query) into a vector."""
         return self.model.encode(text, show_progress_bar=False).tolist()
 
-# Instantiate our new embeddings object
 embeddings = SentenceTransformersEmbeddings(EMBEDDING_MODEL)
 
-# 2) Create a local LLM instance pointing to Ollama with the Mistral model
-#    Make sure the Ollama server is running and has the Mistral model available.
 llm = OllamaLLM(
     model=LLM_MODEL,
     temperature=0.0,
@@ -48,7 +44,6 @@ llm = OllamaLLM(
     # max_tokens, top_p, etc. can also be set here
 )
 
-#  define system prompt and user prompt to get the correct response from LLM
 pdf_system_prompt = """
 You are an AI data extractor for clinical and wearable health technology documents. Your task is to extract **only explicitly stated** information from the text related to the following **targeted keyword fields**, and output the result in a **CSV-compatible structure** (each field as a string, one row per document). Do not make assumptions or add inferred content. Use "not specified" if the information is missing or not clearly mentioned.
 
