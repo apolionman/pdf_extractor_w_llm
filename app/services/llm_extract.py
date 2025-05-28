@@ -18,7 +18,6 @@ from fastapi import HTTPException
 OLLAMA_BASE_URL=os.getenv("OLLAMA_BASE_URL")
 LLM_MODEL=os.getenv("LLM_MODEL")
 EMBEDDING_MODEL=os.getenv("EMBEDDING_MODEL")
-VECTOR_FILES_DIR=os.getenv("VECTOR_FILES_DIR")
 
 # embedding_model = SentenceTransformer(EMBEDDING_MODEL)
 
@@ -89,10 +88,11 @@ def create_vector_store_from_txt(text_path):
     Loads a text file, splits it into manageable chunks, and creates a FAISS-based vector store
     from these chunks using Hugging Face Embeddings.
     """
+    vector_store_path = "vector_files"
+    os.makedirs(vector_store_path, exist_ok=True)
 
     file_name = os.path.splitext(os.path.basename(text_path))[0]
     file_extn = os.path.splitext(os.path.basename(text_path))[1]
-    vector_store_path = os.path.join(VECTOR_FILES_DIR, file_name)
 
     # 1. Load the raw text as Document objects
     loader = TextLoader(text_path, encoding='utf-8')
