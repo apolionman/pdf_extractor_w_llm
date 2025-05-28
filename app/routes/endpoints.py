@@ -7,26 +7,35 @@ router = APIRouter()
 
 @router.post("/extract-pdf")
 async def extract_pdf(
-    files: List[UploadFile] = File(..., description="Upload your pdf file here.")
+    files: List[UploadFile] = File(..., description="Upload your PDF files here.")
 ):
+    summaries = []
+
     for file in files:
-        tmpdir = tempfile.mkdtemp()
         file_ext = os.path.splitext(file.filename)[-1].lower()
-        print("[DEBUG] This is the content =>",file.content_type)
-        if file_ext == ".pdf":
-            file_path = os.path.join(tmpdir, file.filename)
-            genetiq_summarized = await summarization(file_path)
-            print(genetiq_summarized) 
-            
-            raise HTTPException(
-                status_code=400,
-                detail=f"Invalid file '{file.filename}'. Only PDF files are allowed."
-            )   
 
         if file_ext != ".pdf":
             raise HTTPException(
                 status_code=400,
                 detail=f"Invalid file '{file.filename}'. Only .pdf is allowed."
             )
-        
-        shutil.rmtree(tmpdir, ignore_errors=True)
+
+        tmpdir = tempfile.mkdtemp()
+        file_path = os.path.join(tmpdir, file.filename)
+
+        # Save the uploaded file to disk
+        with open(file_path, "wb") as out_file:
+            shutil.copyfileobj(file.file, out_file)
+
+        try:
+            # Run your summarization logic
+            genetiq_summarized = await summarization(file_path)
+            summaries.append({
+                "filename": file.filename,
+                "summary": genetiq_summarized
+            })
+        finally:
+            # Clean up the temp directory
+            shutil.rmtree(tmpdir, ignore_errors=True)
+
+    return {"summaries": summaries}
