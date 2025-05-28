@@ -39,6 +39,8 @@ langchain-community
 openai
 anthropic
 tiktoken
+fitz
+python-docx
 
 # Math / data handling
 numpy
