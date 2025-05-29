@@ -54,7 +54,7 @@ async def generate(request: Request):
     async def stream_response():
         try:
             async with httpx.AsyncClient(timeout=None) as client:
-                async with client.stream("POST", OLLAMA_URL, json=payload) as r:
+                async with client.stream("POST", f"{OLLAMA_URL}/api/generate", json=payload) as r:
                     print(f"Ollama responded with status: {r.status_code}")
                     r.raise_for_status()  # raise for HTTP errors (4xx, 5xx)
 
