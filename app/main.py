@@ -19,7 +19,3 @@ app.add_middleware(
 )
 
 app.include_router(endpoints_router, prefix="/api/v1", tags=["Backend Endpoints"])
-
-@app.get("/api/v1/health")
-async def health():
-    return {"status": "ok"}

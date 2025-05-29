@@ -8,6 +8,10 @@ OLLAMA_URL = os.getenv("OLLAMA_BASE_URL")
 
 router = APIRouter()
 
+@router.get("/health")
+async def health():
+    return {"status": "ok"}
+
 @router.post("/extract-pdf")
 async def extract_pdf(
     files: List[UploadFile] = File(..., description="Upload your PDF files here.")
@@ -44,11 +48,24 @@ async def extract_pdf(
 async def generate(request: Request):
     print("Generate endpoint hit")
     payload = await request.json()
+    print(f"Connecting to Ollama at: {OLLAMA_URL}")
+    print(f"Payload: {payload}")
 
     async def stream_response():
-        async with httpx.AsyncClient(timeout=None) as client:
-            async with client.stream("POST", OLLAMA_URL, json=payload) as r:
-                async for chunk in r.aiter_text():
-                    yield chunk
+        try:
+            async with httpx.AsyncClient(timeout=None) as client:
+                async with client.stream("POST", OLLAMA_URL, json=payload) as r:
+                    print(f"Ollama responded with status: {r.status_code}")
+                    r.raise_for_status()  # raise for HTTP errors (4xx, 5xx)
+
+                    async for chunk in r.aiter_text():
+                        yield chunk
+        except httpx.RequestError as e:
+            print(f"Request error connecting to Ollama: {e}")
+            yield '{"error": "Failed to connect to Ollama."}'
+        except httpx.HTTPStatusError as e:
+            print(f"HTTP error from Ollama: {e}")
+            yield f'{{"error": "Ollama returned HTTP {e.response.status_code}"}}'
 
     return StreamingResponse(stream_response(), media_type="application/json")
+
