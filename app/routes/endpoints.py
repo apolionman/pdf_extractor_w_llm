@@ -1,12 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Query, Request
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 from typing import List
+from openai import OpenAI
 from app.services.llm_extract import *
-import tempfile, os, httpx, asyncio
+import tempfile, os, httpx, asyncio, subprocess
 
 OLLAMA_URL = os.getenv("OLLAMA_BASE_URL")
 
 router = APIRouter()
+client = OpenAI()
 
 @router.get("/health")
 async def health():
@@ -69,3 +71,64 @@ async def generate(request: Request):
 
     return StreamingResponse(stream_response(), media_type="application/json")
 
+ALLOWED_TYPES = {
+    "audio/mpeg", "audio/webm", "video/mp4",
+    "audio/mp4", "video/webm", "audio/x-m4a", "audio/m4a"
+}
+
+MIME_EXTENSION_MAP = {
+    "audio/mpeg": ".mp3",
+    "audio/webm": ".webm",
+    "video/webm": ".webm",
+    "video/mp4": ".mp4",
+    "audio/mp4": ".mp4",
+    "audio/x-m4a": ".m4a",
+    "audio/m4a": ".m4a",
+}
+
+@router.post("/transcribe")
+async def transcribe_audio(
+    file: UploadFile = File(...),
+    ):
+    """
+        Supported input audio file "audio/mpeg", "audio/webm", "video/mp4", "audio/mp4", "video/webm", "audio/x-m4a"
+    """
+
+    if file.content_type not in ALLOWED_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported file type: {file.content_type}. Must be one of {ALLOWED_TYPES}",
+        )
+
+    suffix = MIME_EXTENSION_MAP.get(file.content_type, ".tmp")
+    input_tmp = None
+    wav_path = None
+
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as input_tmp:
+            input_tmp.write(await file.read())
+            input_path = input_tmp.name
+
+        wav_path = input_path.replace(suffix, ".wav")
+        subprocess.run([
+            "ffmpeg", "-y", "-i", input_path,
+            "-ar", "24000", "-ac", "1", wav_path
+        ], check=True)
+
+        with open(wav_path, "rb") as wav_file:
+            result = client.audio.transcriptions.create(
+                model="whisper-1",
+                file=("audio.wav", wav_file, "audio/wav"),
+                response_format="text",
+                language="en"
+            )
+            return JSONResponse(content={"transcription": result.strip()})
+
+    except subprocess.CalledProcessError as e:
+        raise HTTPException(status_code=500, detail=f"FFmpeg error: {e}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        for path in [input_tmp.name if input_tmp else None, wav_path]:
+            if path and os.path.exists(path):
+                os.remove(path)

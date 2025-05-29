@@ -25,7 +25,7 @@ jobs:
       - name: Run Docker container
         run: |
           docker run -d --gpus all \
-            -e OPEN_API_KEY="${{ secrets.OPEN_API_KEY }}" \
+            -e OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
             -e OLLAMA_BASE_URL="${{ secrets.OLLAMA_BASE_URL }}" \
             -e EMBEDDING_MODEL="${{ secrets.EMBEDDING_MODEL }}" \
             -e LLM_MODEL="${{ secrets.LLM_MODEL }}" \
