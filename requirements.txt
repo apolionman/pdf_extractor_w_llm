@@ -74,7 +74,7 @@ sentry-sdk[fastapi]
 # Vector DB
 chromadb
 faiss-cpu
-
+ffmpeg
 openai==1.74.0
 openai-agents
 openai-agents[voice]
