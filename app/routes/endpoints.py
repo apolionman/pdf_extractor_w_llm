@@ -42,6 +42,7 @@ async def extract_pdf(
 
 @router.post("/generate")
 async def generate(request: Request):
+    print("Generate endpoint hit")
     payload = await request.json()
 
     async def stream_response():
