@@ -78,5 +78,3 @@ faiss-cpu
 openai==1.74.0
 openai-agents
 openai-agents[voice]
-PyAudio==0.2.14
-sounddevice==0.4.6
