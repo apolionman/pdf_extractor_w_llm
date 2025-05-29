@@ -1,7 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Query
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Query, Request
+from fastapi.responses import StreamingResponse
 from typing import List
 from app.services.llm_extract import *
-import tempfile, os
+import tempfile, os, httpx, asyncio
+
+OLLAMA_URL = os.getenv("OLLAMA_BASE_URL")
 
 router = APIRouter()
 
@@ -36,3 +39,15 @@ async def extract_pdf(
             shutil.rmtree(tmpdir, ignore_errors=True)
 
     return {"summaries": summaries}
+
+@router.post("/generate")
+async def generate(request: Request):
+    payload = await request.json()
+
+    async def stream_response():
+        async with httpx.AsyncClient(timeout=None) as client:
+            async with client.stream("POST", OLLAMA_URL, json=payload) as r:
+                async for chunk in r.aiter_text():
+                    yield chunk
+
+    return StreamingResponse(stream_response(), media_type="application/json")
