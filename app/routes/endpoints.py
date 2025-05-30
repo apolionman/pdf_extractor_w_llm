@@ -74,7 +74,8 @@ async def generate(request: Request):
 
 ALLOWED_TYPES = {
     "audio/mpeg", "audio/webm", "video/mp4",
-    "audio/mp4", "video/webm", "audio/x-m4a", "audio/m4a"
+    "audio/mp4", "video/webm", "audio/x-m4a", 
+    "audio/m4a",  "audio/ogg"
 }
 
 MIME_EXTENSION_MAP = {
@@ -85,6 +86,7 @@ MIME_EXTENSION_MAP = {
     "audio/mp4": ".mp4",
     "audio/x-m4a": ".m4a",
     "audio/m4a": ".m4a",
+    "audio/ogg": ".ogg"
 }
 
 @router.post("/transcribe")
