@@ -76,5 +76,6 @@ chromadb
 faiss-cpu
 ffmpeg
 openai==1.74.0
+openai-whisper
 openai-agents
 openai-agents[voice]

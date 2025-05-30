@@ -3,9 +3,10 @@ from fastapi.responses import StreamingResponse, JSONResponse
 from typing import List
 from openai import OpenAI
 from app.services.llm_extract import *
-import tempfile, os, httpx, asyncio, subprocess
+import tempfile, os, httpx, asyncio, subprocess, whisper
 
 OLLAMA_URL = os.getenv("OLLAMA_BASE_URL")
+stt = whisper.load_model("base")
 
 router = APIRouter()
 client = OpenAI()
@@ -89,11 +90,11 @@ MIME_EXTENSION_MAP = {
 @router.post("/transcribe")
 async def transcribe_audio(
     file: UploadFile = File(...),
-    ):
+):
     """
-        Supported input audio file "audio/mpeg", "audio/webm", "video/mp4", "audio/mp4", "video/webm", "audio/x-m4a"
+    Transcribe uploaded audio/video using Whisper locally.
+    Supports: audio/mpeg, audio/webm, video/mp4, audio/mp4, video/webm, audio/x-m4a
     """
-
     if file.content_type not in ALLOWED_TYPES:
         raise HTTPException(
             status_code=400,
@@ -105,24 +106,22 @@ async def transcribe_audio(
     wav_path = None
 
     try:
+        # Save the uploaded file temporarily
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as input_tmp:
             input_tmp.write(await file.read())
             input_path = input_tmp.name
 
+        # Convert to mono WAV at 24kHz for Whisper
         wav_path = input_path.replace(suffix, ".wav")
         subprocess.run([
             "ffmpeg", "-y", "-i", input_path,
             "-ar", "24000", "-ac", "1", wav_path
         ], check=True)
 
-        with open(wav_path, "rb") as wav_file:
-            result = client.audio.transcriptions.create(
-                model="whisper-1",
-                file=("audio.wav", wav_file, "audio/wav"),
-                response_format="text",
-                language="en"
-            )
-            return JSONResponse(content={"transcription": result.strip()})
+        # Transcribe using whisper
+        result = stt.transcribe(wav_path, fp16=False)
+        text = result["text"].strip()
+        return JSONResponse(content={"transcription": text})
 
     except subprocess.CalledProcessError as e:
         raise HTTPException(status_code=500, detail=f"FFmpeg error: {e}")
