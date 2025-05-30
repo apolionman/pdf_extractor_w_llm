@@ -6,7 +6,7 @@ from app.services.llm_extract import *
 import tempfile, os, httpx, asyncio, subprocess, whisper
 
 OLLAMA_URL = os.getenv("OLLAMA_BASE_URL")
-stt = whisper.load_model("base")
+stt = whisper.load_model("large")
 
 router = APIRouter()
 client = OpenAI()
