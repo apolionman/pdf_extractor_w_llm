@@ -64,10 +64,10 @@ param = {
 def prepare_prompt(param):
     # Generate a nicely formatted string for each field with its description
     fields_with_description = "\n".join([
-        f'- "{key}" ({val["type"].__name__}): {val["description"]}'
+        f'- "{key}" ({val["type"]}): {val["description"]}'
         for key, val in param.items()
     ])
-
+    
     pdf_system_prompt = f"""
         You are an AI data extractor for clinical and wearable health technology documents. Your task is to extract **only explicitly stated** information from the text related to the following **targeted keyword fields**, and output the result in a **flat JSON object** format (field-value pairs). Do not make assumptions or add inferred content. Use "not specified" if the information is missing or not clearly mentioned.
 
