@@ -43,42 +43,54 @@ llm = OllamaLLM(
     # max_tokens, top_p, etc. can also be set here
 )
 
-pdf_system_prompt = """
-You are an AI data extractor for clinical and wearable health technology documents. Your task is to extract **only explicitly stated** information from the text related to the following **targeted keyword fields**, and output the result in a **flat JSON object** format (field-value pairs). Do not make assumptions or add inferred content. Use "not specified" if the information is missing or not clearly mentioned.
+param = {
+    "wearable_biosensor": {"type": str, "description": "The name or type of the wearable biosensor device."},
+    "healthcare_monitoring": {"type": str, "description": "The healthcare context or purpose for which the device is used."},
+    "biomarkers": {"type": list, "description": "Biological markers that the device monitors, such as glucose, lactate, etc."},
+    "bioligical_fluids": {"type": list, "description": "Types of biological fluids analyzed, e.g., sweat, blood, saliva."},
+    "physiological_conditions": {"type": list, "description": "Physiological conditions assessed or measured by the device."},
+    "associated_conditions": {"type": list, "description": "Medical conditions associated with the use of this device (e.g., diabetes, cardiovascular disease)."},
+    "monitoring_methods": {"type": list, "description": "Methods used for monitoring, such as optical, electrochemical, etc."},
+    "wearable_sensors": {"type": list, "description": "Types of sensors integrated into the device (e.g., ECG sensor, accelerometer)."},
+    "device_type": {"type": list, "description": "Form factor or category of the device, such as wristband, patch, smart ring."},
+    "device_brand": {"type": list, "description": "Brand(s) of the device if mentioned."},
+    "device_model": {"type": str, "description": "Specific model name or number of the device."},
+    "monitoring_features": {"type": list, "description": "Key features or functionalities the device offers for monitoring health."},
+    "accuracy": {"type": str, "description": "Reported accuracy of the device or any validation metrics."},
+    "physiological_parameters": {"type": list, "description": "Specific physiological parameters being measured (e.g., heart rate, SpO2)."}
+}
 
-Target fields (JSON keys):
-{{
-    "wearable_biosensor": "string",
-    "healthcare_monitoring": "string",
-    "biomarkers": "[...]",
-    "bioligical_fluids": "[...]",
-    "physiological_conditions": "[...]",
-    "associated_conditions": "[...]",
-    "monitoring_methods": "[...]",
-    "wearable_sensors": "[...]",
-    "device_type": "[...]",
-    "device_brand": "[...]",
-    "device_model": "string",
-    "monitoring_features": "[...]",
-    "accuracy": "string",
-    "physiological_parameters": "[...]"
-}}
 
-RULES:
-- Only use exact terms or values directly from the document.
-- For "FDA Status/Year/AP", extract all 3 components if present; otherwise return "not specified".
-- Always return a value for every keyword field, using "not specified" if missing.
-- Output a single flat JSON object per document, with each key corresponding to a field name and its value as a string.
-- Do not return nested objects, arrays, or any content outside the JSON object.
-"""
+def prepare_prompt(param):
+    # Generate a nicely formatted string for each field with its description
+    fields_with_description = "\n".join([
+        f'- "{key}" ({val["type"].__name__}): {val["description"]}'
+        for key, val in param.items()
+    ])
+
+    pdf_system_prompt = f"""
+        You are an AI data extractor for clinical and wearable health technology documents. Your task is to extract **only explicitly stated** information from the text related to the following **targeted keyword fields**, and output the result in a **flat JSON object** format (field-value pairs). Do not make assumptions or add inferred content. Use "not specified" if the information is missing or not clearly mentioned.
+
+        Target fields with descriptions:
+        {fields_with_description}
+
+        RULES:
+        - Only use exact terms or values directly from the document.
+        - For "FDA Status/Year/AP", extract all 3 components if present; otherwise return "not specified".
+        - Always return a value for every keyword field, using "not specified" if missing.
+        - Output a single flat JSON object per document, with each key corresponding to a field name and its value as a string.
+        - Do not return nested objects, arrays, or any content outside the JSON object.
+        """
+    return pdf_system_prompt
+
+
 
 user_prompt = "Extract the listed keyword-based medical device information from the document in flat JSON format. Use 'not specified' where information is missing. Do not infer data."
 
 pdf_prompt_template = ChatPromptTemplate.from_messages([
-    ("system", pdf_system_prompt),
+    ("system", prepare_prompt(param)),
     ("human", "{context}")
 ])
-
 
 def create_vector_store_from_txt(text_path):
     """
