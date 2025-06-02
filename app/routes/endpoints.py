@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Query, Request
 from fastapi.responses import StreamingResponse, JSONResponse
-from typing import List
+from typing import List, Dict, Optional
 from openai import OpenAI
 from app.services.llm_extract import *
 import tempfile, os, httpx, asyncio, subprocess, whisper
@@ -17,9 +17,15 @@ async def health():
 
 @router.post("/extract-pdf")
 async def extract_pdf(
-    files: List[UploadFile] = File(..., description="Upload your PDF files here.")
+    files: List[UploadFile] = File(..., description="Upload your PDF files here."),
+    prompt: Optional[str] = Form(None, description="Custom extraction prompt in JSON string format.")
 ):
     summaries = []
+
+    try:
+        user_prompt_data = json.loads(prompt) if prompt else None
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid prompt JSON format.")
 
     for file in files:
         file_ext = os.path.splitext(file.filename)[-1].lower()
@@ -37,7 +43,8 @@ async def extract_pdf(
             shutil.copyfileobj(file.file, out_file)
 
         try:
-            genetiq_summarized = await summarization(file_path)
+            # Modify summarization to accept dynamic prompt
+            genetiq_summarized = await summarization(file_path, user_prompt_data)
             summaries.append({
                 "filename": file.filename,
                 "summary": genetiq_summarized

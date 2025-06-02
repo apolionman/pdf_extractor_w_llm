@@ -148,11 +148,7 @@ def clean_trailing_commas(json_like_str: str) -> str:
     cleaned = re.sub(r",(\s*[}\]])", r"\1", json_like_str)
     return cleaned
 
-async def summarization(file_path):
-    """
-    Main summary function.
-    Extracts structured health technology information from a PDF and returns it in JSON format.
-    """
+async def summarization(file_path, user_prompt_data=None):
     if not isinstance(file_path, str):
         raise TypeError(f"Invalid file_path type: expected str, got {type(file_path)} — value: {file_path}")
 
@@ -164,38 +160,37 @@ async def summarization(file_path):
         if doc_text_path is not None and doc_text.strip():
             doc_vector_db = create_vector_store_from_txt(doc_text_path)
 
-            summary_raw = retrieve_info(doc_vector_db, user_prompt, pdf_prompt_template)
+            # Dynamically generate prompt template
+            dynamic_param = user_prompt_data if user_prompt_data else param
+            dynamic_template = ChatPromptTemplate.from_messages([
+                ("system", prepare_prompt(dynamic_param)),
+                ("human", "{context}")
+            ])
+
+            summary_raw = retrieve_info(doc_vector_db, user_prompt, dynamic_template)
 
             if not summary_raw.strip():
                 raise ValueError("[ERROR] ❌ Empty response from LLM.")
 
             try:
                 summary_parsed = json.loads(summary_raw)
-
                 if not isinstance(summary_parsed, dict):
                     raise ValueError("[ERROR] Expected a flat dictionary as JSON output.")
-
                 summary_json = summary_parsed
-
             except json.JSONDecodeError as err:
-                print(f"[WARNING] JSON parsing failed: {err}")
                 cleaned_raw = clean_trailing_commas(summary_raw)
                 try:
                     summary_parsed = json.loads(cleaned_raw)
-
                     if not isinstance(summary_parsed, dict):
                         raise ValueError("[ERROR] Cleaned JSON still not a dictionary.")
-
                     summary_json = summary_parsed
-
-                    print("[INFO] ✅ Successfully parsed after cleaning trailing commas.")
                 except Exception as fallback_err:
                     error_log_path = os.path.join("/tmp", f"llm_output_error_{uuid.uuid4()}.txt")
                     with open(error_log_path, "w", encoding="utf-8") as f:
                         f.write(summary_raw)
-                    print(f"[ERROR] Both original and cleaned JSON failed: {fallback_err}")
                     raise ValueError(f"Invalid JSON from LLM. Original error: {err}")
 
             shutil.rmtree(doc_vector_db)
 
     return summary_json
+
