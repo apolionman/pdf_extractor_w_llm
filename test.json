@@ -1,0 +1,57 @@
+{
+    "summaries": [
+      {
+        "filename": "molecules-26-00748-v2.pdf",
+        "summary": {
+          "wearable_biosensor": "not specified",
+          "healthcare_monitoring": "Healthcare and Disease Monitoring",
+          "biomarkers": [
+            "critical biomarkers",
+            "biochemical markers"
+          ],
+          "biological_fluids": [
+            "saliva",
+            "blood",
+            "sweat",
+            "skin",
+            "tears"
+          ],
+          "physiological_conditions": [
+            "not specified"
+          ],
+          "associated_conditions": [
+            "not specified"
+          ],
+          "monitoring_methods": [
+            "electrochemical",
+            "optical"
+          ],
+          "wearable_sensors": [
+            "not specified"
+          ],
+          "device_type": [
+            "watch",
+            "bands",
+            "etc."
+          ],
+          "device_brand": [
+            "not specified"
+          ],
+          "device_model": "not specified",
+          "monitoring_features": [
+            "non-invasive and real-time quantification of various biochemical markers"
+          ],
+          "accuracy": "not specified",
+          "physiological_parameters": [
+            "not specified"
+          ]
+        }
+      }
+    ]
+  }
+
+curl http://localhost:11434/api/generate -d '{
+    "model": "gemma3:27b",
+    "prompt": "What is your latest trained date? when did it start and when did it finished?",
+    "stream": true
+    }'
