@@ -78,7 +78,12 @@ def prepare_prompt(param):
         - Only use exact terms or values directly from the document.
         - For "FDA Status/Year/AP", extract all 3 components if present; otherwise return "not specified".
         - Always return a value for every keyword field, using "not specified" if missing.
-        - Output a single flat JSON object per document, with each key corresponding to a field name and its value as a string.
+        - Output must be a SINGLE FLAT JSON OBJECT with no nesting.
+        - Example format: {{
+            "wearable_biosensor": "value or not specified",
+            "healthcare_monitoring": "value or not specified",
+            "biomarkers": ["list", "of", "values"] or "not specified"
+          }}
         - Do not return nested objects, arrays, or any content outside the JSON object.
         """
     return pdf_system_prompt
@@ -146,6 +151,10 @@ def retrieve_info(vector_db_path, user_prompt, prompt_template):
 def clean_trailing_commas(json_like_str: str) -> str:
     # Remove trailing commas before } or ]
     cleaned = re.sub(r",(\s*[}\]])", r"\1", json_like_str)
+    # Fix missing quotes around keys
+    cleaned = re.sub(r'(\{|\,)\s*([a-zA-Z0-9_]+)\s*:', r'\1"\2":', cleaned)
+    # Fix missing quotes around string values
+    cleaned = re.sub(r':\s*([a-zA-Z][a-zA-Z0-9_]*)\s*([,\}])', r': "\1"\2', cleaned)
     return cleaned
 
 async def summarization(file_path, user_prompt_data=None):
@@ -172,13 +181,43 @@ async def summarization(file_path, user_prompt_data=None):
             if not summary_raw.strip():
                 raise ValueError("[ERROR] ❌ Empty response from LLM.")
 
+            # Enhanced JSON parsing
             try:
+                # First try to parse directly
                 summary_parsed = json.loads(summary_raw)
-                if not isinstance(summary_parsed, dict):
-                    raise ValueError("[ERROR] Expected a flat dictionary as JSON output.")
-                summary_json = summary_parsed
+                
+                # If we get here, parsing succeeded but might be wrong format
+                if isinstance(summary_parsed, dict):
+                    # Check if the response is nested like in the error
+                    if any(isinstance(v, dict) for v in summary_parsed.values()):
+                        # If nested, try to flatten it
+                        flattened = {}
+                        for key, value in summary_parsed.items():
+                            if isinstance(value, dict):
+                                # Just take the first simple value we find
+                                for subkey, subvalue in value.items():
+                                    if isinstance(subvalue, (str, int, float, bool)) or subvalue is None:
+                                        flattened[key] = subvalue
+                                        break
+                                else:
+                                    flattened[key] = "not specified"
+                            else:
+                                flattened[key] = value
+                        summary_json = flattened
+                    else:
+                        summary_json = summary_parsed
+                else:
+                    raise ValueError("[ERROR] Expected a dictionary as JSON output.")
+                    
             except json.JSONDecodeError as err:
+                # Try to fix common JSON issues
                 cleaned_raw = clean_trailing_commas(summary_raw)
+                
+                # Try to extract just the JSON part if there's extra text
+                json_match = re.search(r'\{.*\}', cleaned_raw, re.DOTALL)
+                if json_match:
+                    cleaned_raw = json_match.group(0)
+                
                 try:
                     summary_parsed = json.loads(cleaned_raw)
                     if not isinstance(summary_parsed, dict):
@@ -187,7 +226,7 @@ async def summarization(file_path, user_prompt_data=None):
                 except Exception as fallback_err:
                     error_log_path = os.path.join("/tmp", f"llm_output_error_{uuid.uuid4()}.txt")
                     with open(error_log_path, "w", encoding="utf-8") as f:
-                        f.write(summary_raw)
+                        f.write(f"Original error: {err}\n\nAttempted to clean:\n{cleaned_raw}\n\nOriginal output:\n{summary_raw}")
                     raise ValueError(f"Invalid JSON from LLM. Original error: {err}")
 
             shutil.rmtree(doc_vector_db)
