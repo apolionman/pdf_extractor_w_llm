@@ -3,6 +3,7 @@ from fastapi.responses import StreamingResponse, JSONResponse
 from typing import List, Dict, Optional
 from openai import OpenAI
 from app.services.llm_extract import *
+from app.services.graph_query import *
 import tempfile, os, httpx, asyncio, subprocess, whisper
 
 OLLAMA_URL = os.getenv("OLLAMA_BASE_URL")
@@ -78,6 +79,11 @@ async def generate(request: Request):
             yield f'{{"error": "Ollama returned HTTP {e.response.status_code}"}}'
 
     return StreamingResponse(stream_response(), media_type="application/json")
+
+@router.post("/query-graph")
+async def query_kgs(kg_conn: str, query=str):
+    response = await query_graph(kg_conn, query)
+    return StreamingResponse(response["result"], media_type="application/json")
 
 ALLOWED_TYPES = {
     "audio/mpeg", "audio/webm", "video/mp4",
