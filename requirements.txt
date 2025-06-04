@@ -13,6 +13,7 @@ starlette
 email-validator
 python-dotenv
 pandas
+neo4j
 
 # Authentication and security
 python-jose[cryptography]
