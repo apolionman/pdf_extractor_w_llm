@@ -67,6 +67,7 @@ class Neo4jQueryMaster:
         
         self.chain = GraphCypherQAChain.from_llm(
             llm=self.llm,
+            temperature=0.0,
             graph=self.graph,
             cypher_prompt=self.cypher_prompt,
             verbose=True,
@@ -147,6 +148,7 @@ class Neo4jQueryMaster:
         qa_chain = GraphCypherQAChain.from_llm(
             llm=self.llm,
             graph=self.graph,
+            temperature=0.0,
             verbose=True,
             return_intermediate_steps=True,
             cypher_prompt=self.cypher_prompt,
