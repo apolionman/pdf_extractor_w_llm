@@ -83,30 +83,38 @@ class Neo4jQueryMaster:
         return """
         You are a Neo4j Cypher expert. Generate ONLY the Cypher query to answer the question.
 
-        Rules:
-        1. Use only these node labels: {node_labels}
-        2. Use only these relationship types: {relationship_types}
-        3. Always include LIMIT unless asking for counts
-        4. Never use variable-length paths ([*])
-        5. Return specific properties, not whole nodes
-        6. `labels(n)` instead of `n.label`
-        7. `type(r)` instead of `r.type`
-        8. avoid `type()` on nodes
-        9. Any variable used in RETURN must be defined or carried in WITH
-        10. If you use `n.name` in RETURN, you must either:
-            - Keep `n` in WITH, or
-            - Use `n.name as node_name` in WITH and reference `node_name` in RETURN
-        11. Do NOT use `AS` inside `collect()` or other functions. Apply aliasing outside the function.
-        12. Use `collect(n.property) AS alias`, not `collect(n.property AS alias)`
-        13. In `WITH` clauses, all expressions (e.g., type(r)) must use `AS` to create an alias. You cannot use an unaliased expression in `WITH`.
+            Rules:
+            1. Use only these node labels: {node_labels}
+            2. Use only these relationship types: {relationship_types}
+            3. Always include LIMIT unless asking for counts
+            4. Never use variable-length paths ([*])
+            5. Return specific properties, not whole nodes
+            6. Use `labels(n)` instead of `n.label`
+            7. Use `type(r)` instead of `r.type`
+            8. Avoid using `type()` on nodes
+            9. Any variable used in RETURN must be defined or carried in WITH
+            10. If you use `n.name` in RETURN, you must either:
+                - Keep `n` in WITH, or
+                - Use `n.name AS node_name` in WITH and reference `node_name` in RETURN
+            11. Do NOT use `AS` inside `collect()` or other functions. Apply aliasing outside the function.
+            12. Use `collect(n.property) AS alias`, not `collect(n.property AS alias)`
+            13. In `WITH` clauses, all expressions (e.g., type(r)) must use `AS` to create an alias. You cannot use an unaliased expression in `WITH`.
+            14. Do NOT use SQL-style subqueries like `WITH alias AS (...)`. Instead, write the query directly or use `CALL` if subqueries are needed.
+            15. Stictly! always wrap property names that contain spaces, hyphens, or special characters in plain backticks. For example:
+                - Use rrh.`Age group_Min` instead of rrh.Age group_Min
+                - Use rrh.`Ref_range-Female_Max` instead of rrh.Ref_range-Female_Max
+                - Do NOT escape the backticks — use `rrh.`Property Name`` (not rrh.\`Property Name\`)
+            16. Do NOT use `OR` inside `MATCH` or pattern expressions. Use separate `OPTIONAL MATCH` or `MATCH` statements instead.
+            17. Do NOT write natural-language expressions like `WITH any <label> nodes`. Always use `MATCH (n:Label)` to select nodes.
+            18. All node retrievals must begin with a `MATCH` clause, never a `WITH`.
+            19. Every variable (e.g., n, rrh) used in RETURN must be introduced with a MATCH or WITH clause.
 
+            Schema Info:
+            {schema_info}
 
-        Schema Info:
-        {schema_info}
+            Question: {question}
 
-        Question: {question}
-
-        Cypher Query:
+            Cypher Query:
         """
 
     def query(self, question: str) -> Dict[str, Any]:
