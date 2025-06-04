@@ -89,6 +89,17 @@ class Neo4jQueryMaster:
         3. Always include LIMIT unless asking for counts
         4. Never use variable-length paths ([*])
         5. Return specific properties, not whole nodes
+        6. `labels(n)` instead of `n.label`
+        7. `type(r)` instead of `r.type`
+        8. avoid `type()` on nodes
+        9. Any variable used in RETURN must be defined or carried in WITH
+        10. If you use `n.name` in RETURN, you must either:
+            - Keep `n` in WITH, or
+            - Use `n.name as node_name` in WITH and reference `node_name` in RETURN
+        11. Do NOT use `AS` inside `collect()` or other functions. Apply aliasing outside the function.
+        12. Use `collect(n.property) AS alias`, not `collect(n.property AS alias)`
+        13. In `WITH` clauses, all expressions (e.g., type(r)) must use `AS` to create an alias. You cannot use an unaliased expression in `WITH`.
+
 
         Schema Info:
         {schema_info}
@@ -99,27 +110,72 @@ class Neo4jQueryMaster:
         """
 
     def query(self, question: str) -> Dict[str, Any]:
-        """
-        Execute a query with cascading fallback strategy
-        Returns: {
-            'results': list of query results,
-            'query_used': str,
-            'source': str,
-            'error': Optional[str]
+        raw_schema = self.graph.get_schema  # This is a raw string, not an object
+
+        # Extract node labels
+        node_labels = []
+        for line in raw_schema.splitlines():
+            if line.startswith("Node properties:"):
+                continue
+            if line.startswith("Relationship properties:"):
+                break
+            if line.strip():
+                label = line.split(" ")[0]
+                node_labels.append(label.strip())
+
+        # Extract relationship types
+        relationship_types = []
+        rel_section = False
+        for line in raw_schema.splitlines():
+            if line.startswith("Relationship properties:"):
+                rel_section = True
+                continue
+            if line.startswith("The relationships:"):
+                break
+            if rel_section and line.strip():
+                rel_type = line.split(" ")[0]
+                relationship_types.append(rel_type.strip())
+
+        qa_chain = GraphCypherQAChain.from_llm(
+            llm=self.llm,
+            graph=self.graph,
+            verbose=True,
+            return_intermediate_steps=True,
+            cypher_prompt=self.cypher_prompt,
+            return_direct=True,
+            allow_dangerous_requests=True,
+            node_label_names=node_labels,
+            relationship_type_names=relationship_types,
+            schema=raw_schema
+            )
+
+        result = qa_chain.invoke({
+        "query": question,
+        "schema_info": raw_schema,
+        "node_labels": node_labels,
+        "relationship_types": relationship_types
+        })
+
+        # Add structure to response
+        structured_result = {
+            "question": question,
+            "cypher_query": result.get("intermediate_steps", [{}])[0].get("cypher_query", "N/A"),
+            "data": result.get("result", "No result returned")
         }
-        """
+
+        return structured_result
         # First try LLM-generated query
-        llm_result = self._try_llm_query(question)
-        if llm_result and not llm_result.get("error"):
-            return llm_result
+        # llm_result = self._try_llm_query(question)
+        # if llm_result and not llm_result.get("error"):
+        #     return llm_result
 
-        # Then try pattern-matched query
-        pattern_result = self._try_pattern_query(question)
-        if pattern_result and not pattern_result.get("error"):
-            return pattern_result
+        # # Then try pattern-matched query
+        # pattern_result = self._try_pattern_query(question)
+        # if pattern_result and not pattern_result.get("error"):
+        #     return pattern_result
 
-        # Final fallback
-        return self._execute_fallback_query(question)
+        # # Final fallback
+        # return self._execute_fallback_query(question)
 
     def _try_llm_query(self, question: str) -> Optional[Dict[str, Any]]:
         """Attempt to use LLM-generated query"""
