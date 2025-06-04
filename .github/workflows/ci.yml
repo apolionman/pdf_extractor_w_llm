@@ -28,6 +28,7 @@ jobs:
             --replicas 3 \
             --publish published=8002,target=8000 \
             --mount type=bind,source=/home/prepaire/ocr,target=/models \
+            --mount type=bind,source=/home/prepaire/whisperer,target=/root/.cache/whisper \
             --mount type=bind,source=/home/prepaire/.cache/huggingface/hub,target=/embedded \
             --env OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
             --env OLLAMA_BASE_URL="${{ secrets.OLLAMA_BASE_URL }}" \
