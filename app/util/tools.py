@@ -16,13 +16,19 @@ from typing import Tuple
 PROC_PAGE_LIMIT = 2
 
 # paddle.set_device('cpu')
+DET_DIR = '/models/en_PP-OCRv3_det_infer'
+REC_DIR = '/models/en_PP-OCRv4_rec_infer'
+CLS_DIR = '/models/ch_ppocr_mobile_v2.0_cls_infer'
 
 use_gpu=True
 paddle_ocr = PaddleOCR(
     use_angle_cls=True,
     lang='en',
     show_log=False,
-    use_gpu=use_gpu
+    use_gpu=use_gpu,
+    det_model_dir=DET_DIR,
+    rec_model_dir=REC_DIR,
+    cls_model_dir=CLS_DIR,
 )
 
 def get_text_from_pdf_paddle(pdf_path: str) -> Tuple[str, str]:

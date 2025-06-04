@@ -27,9 +27,10 @@ jobs:
             --name pdf_extractor_llm \
             --replicas 3 \
             --publish published=8002,target=8000 \
+            --mount type=bind,source=/home/prepaire/ocr,target=/models \
+            --mount type=bind,source=/home/prepaire/.cache/huggingface/hub,target=/embedded \
             --env OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
             --env OLLAMA_BASE_URL="${{ secrets.OLLAMA_BASE_URL }}" \
-            --env EMBEDDING_MODEL="${{ secrets.EMBEDDING_MODEL }}" \
             --env LLM_MODEL="${{ secrets.LLM_MODEL }}" \
             --env NVIDIA_VISIBLE_DEVICES=all \
             --constraint 'node.labels.gpu == true' \

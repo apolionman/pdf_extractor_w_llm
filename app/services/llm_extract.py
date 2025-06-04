@@ -17,7 +17,7 @@ from fastapi import HTTPException
 
 OLLAMA_BASE_URL=os.getenv("OLLAMA_BASE_URL")
 LLM_MODEL=os.getenv("LLM_MODEL")
-EMBEDDING_MODEL=os.getenv("EMBEDDING_MODEL")
+EMBEDDING_MODEL='/embedded/models--sentence-transformers--all-MiniLM-L12-v2/snapshots/c004d8e3e901237d8fa7e9fff12774962e391ce5'
 
 embedding_model = SentenceTransformer(EMBEDDING_MODEL)
 
