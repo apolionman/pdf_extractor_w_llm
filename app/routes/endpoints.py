@@ -83,7 +83,7 @@ async def generate(request: Request):
 @router.post("/query-graph")
 async def query_kgs(kg_conn: str, query=str):
     response = await query_graph(kg_conn, query)
-    return StreamingResponse(response, media_type="application/json")
+    return JSONResponse(content=response, media_type="application/json")
 
 ALLOWED_TYPES = {
     "audio/mpeg", "audio/webm", "video/mp4",
