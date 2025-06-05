@@ -62,11 +62,13 @@ class Neo4jQueryMaster:
         """Configure the query chain with proper input variables"""
         self.cypher_prompt = PromptTemplate(
             input_variables=["question", "schema_info", "node_labels", "relationship_types"],
+
             template=self._get_prompt_template()
         )
         
         self.chain = GraphCypherQAChain.from_llm(
             llm=self.llm,
+            temperature=0.0,
             graph=self.graph,
             cypher_prompt=self.cypher_prompt,
             verbose=True,
@@ -75,7 +77,7 @@ class Neo4jQueryMaster:
             max_retries=1,
             cypher_query_timeout=15,
             return_direct=True,
-            return_intermediate_steps=True,
+            return_intermediate_steps=False,
             allow_dangerous_requests=True
         )
 
@@ -108,6 +110,9 @@ class Neo4jQueryMaster:
             17. Do NOT write natural-language expressions like `WITH any <label> nodes`. Always use `MATCH (n:Label)` to select nodes.
             18. All node retrievals must begin with a `MATCH` clause, never a `WITH`.
             19. Every variable (e.g., n, rrh) used in RETURN must be introduced with a MATCH or WITH clause.
+            20. Always assign a variable to each relationship in MATCH clauses (e.g., `[r:RELATION_TYPE]`, not `[:RELATION_TYPE]`) — this is required when using `type(r)` in RETURN or WITH.
+            21. Never use patterns like `type(n)-[r:REL]->(m)` in RETURN or WITH. The `type()` function only takes a relationship variable, not a full pattern. Instead, assign the relationship to a variable in MATCH and use `type(r)` directly.
+
 
             Schema Info:
             {schema_info}
@@ -118,35 +123,23 @@ class Neo4jQueryMaster:
         """
 
     def query(self, question: str) -> Dict[str, Any]:
-        """Execute a query with proper input formatting"""
-        try:
-            # Get structured schema information
-            schema_info = self.graph.get_schema()
-            
-            # Prepare inputs with all required keys
-            inputs = {
-                "question": question,  # Matches prompt template
-                "schema_info": str(schema_info),
-                "node_labels": self.node_labels,
-                "relationship_types": self.relationship_types
-            }
-            
-            result = self.chain.invoke(inputs)
-            
-            # Structure the response consistently
-            return {
-                "question": question,
-                "cypher_query": result.get("intermediate_steps", {}).get("query", "N/A"),
-                "results": result.get("result", []),
-                "success": True
-            }
-            
-        except Exception as e:
-            return {
-                "question": question,
-                "error": str(e),
-                "success": False
-            }
+        inputs = {
+            "query": question,
+            "schema_info": self.schema_info,
+            "node_labels": self.node_labels,
+            "relationship_types": self.relationship_types
+        }
+
+        result = self.chain.invoke(inputs)
+
+        structured_result = {
+            "question": question,
+            "cypher_query": result.get("intermediate_steps", [{}])[0].get("cypher_query", "N/A"),
+            "data": result.get("result", "No result returned")
+        }
+
+        return structured_result
+
 
     def _try_llm_query(self, question: str) -> Optional[Dict[str, Any]]:
         """Attempt to use LLM-generated query"""
@@ -224,8 +217,7 @@ class Neo4jQueryMaster:
             }
 
     def _extract_limit(self, question: str) -> Optional[int]:
-        """Extract numeric limit from question text"""
-        match = re.search(r'\b(\d+)\b', question)
+        match = re.search(r'(?:top|first|limit)?\s*(\d+)', question.lower())
         return int(match.group(1)) if match else None
 
     def _detect_target_label(self, question: str) -> str:
