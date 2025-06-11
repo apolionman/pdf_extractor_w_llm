@@ -9,7 +9,7 @@ import os, json
 from dotenv import load_dotenv
 load_dotenv('.env')
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL")
-LLM_MODEL = os.getenv("LLM_MODEL")
+LLM_MODEL = "gemma3:27b"
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL")
 llm = OllamaLLM(
     model=LLM_MODEL,
@@ -43,4 +43,4 @@ graph = Neo4jGraph(
 
 
 handler = Neo4jQueryMaster(graph=graph, llm=llm)
-handler.query('can you give me random drug')
+handler.query('can you give me 1 drug name?')

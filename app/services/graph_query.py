@@ -9,7 +9,7 @@ import os, json
 from dotenv import load_dotenv
 load_dotenv('.env')
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL")
-LLM_MODEL = os.getenv("LLM_MODEL")
+LLM_MODEL = "gemma3:27b"
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL")
 
 llm = OllamaLLM(
