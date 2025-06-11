@@ -2,8 +2,7 @@ from langchain.graphs import Neo4jGraph
 from langchain.chains import GraphCypherQAChain
 from langchain_ollama import OllamaLLM
 from langchain_core.prompts.prompt import PromptTemplate
-import os
-import re
+import re, json, os
 from neo4j.exceptions import CypherSyntaxError, ClientError
 from typing import Dict, Any, List, Optional, Tuple
 
@@ -38,11 +37,26 @@ class Neo4jQueryMaster:
                 self.node_labels = self._fetch_node_labels()
                 self.relationship_types = self._fetch_relationship_types()
                 self.schema_info = self._generate_schema_info()
+                print(self.schema_info)
                 return
             except Exception as e:
                 if attempt == max_retries - 1:
                     raise RuntimeError(f"Failed to cache schema after {max_retries} attempts: {str(e)}")
                 continue
+            
+    def _extract_schema(self):
+        # Query Neo4j to get the full schema
+        result = self.graph.query("CALL db.schema.visualization()")[0]
+        nodes = list({n['name'] for n in result['nodes'] if 'name' in n})
+        relationships = [
+            {
+                "from": r[0]["labels"][0] if isinstance(r[0], dict) and "labels" in r[0] else r[0],
+                "type": r[1]["type"] if isinstance(r[1], dict) and "type" in r[1] else r[1],
+                "to": r[2]["labels"][0] if isinstance(r[2], dict) and "labels" in r[2] else r[2]
+            }
+            for r in result['relationships']
+        ]
+        return {"nodes": nodes, "relationships": relationships}
 
     def _fetch_node_labels(self) -> List[str]:
         result = self.graph.query("CALL db.labels() YIELD label RETURN label")
@@ -63,7 +77,7 @@ class Neo4jQueryMaster:
     def _generate_schema_info(self) -> str:
         # Format relationships as "fromLabel->relationshipType->toLabel"
         formatted_relationships = [
-            f"{', '.join(from_labels)}->{rel_type}->{', '.join(to_labels)}"
+            f"({', '.join(from_labels)})-[:{rel_type}]->({', '.join(to_labels)})"
             for from_labels, rel_type, to_labels in self.relationship_types
         ]
         

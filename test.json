@@ -55,3 +55,16 @@ curl http://localhost:11434/api/generate -d '{
     "prompt": "What is your latest trained date? when did it start and when did it finished?",
     "stream": true
     }'
+
+    nodes = [n['name'] for n in result['nodes'] if 'name' in n]
+    relationships = [
+    {
+        "from": r[0]["labels"][0] if isinstance(r[0], dict) and "labels" in r[0] else r[0],
+        "relationship": {
+            "type": r[1]["type"] if isinstance(r[1], dict) and "type" in r[1] else r[1],
+            "properties": r[1].get("properties", {}) if isinstance(r[1], dict) else {}
+        },
+        "to": r[2]["labels"][0] if isinstance(r[2], dict) and "labels" in r[2] else r[2]
+    }
+    for r in result['relationships']
+]

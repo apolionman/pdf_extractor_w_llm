@@ -3,7 +3,7 @@ from langchain.chains import GraphCypherQAChain
 from langchain_ollama import OllamaLLM
 from langchain_core.prompts.prompt import PromptTemplate
 from fastapi.responses import StreamingResponse
-from app.util.query_handler import *
+from app.util.query_handler2 import Neo4jQueryMaster
 from typing import Generator
 import os, json
 from dotenv import load_dotenv
@@ -34,11 +34,13 @@ KG_DICT = {
         "password": "wear007!"
     }
 }
-config = KG_DICT['wear_kg']
+config = KG_DICT['prime_kg']
 graph = Neo4jGraph(
     url=config["url"],
     username=config["username"],
     password=config["password"]
 )
+
+
 handler = Neo4jQueryMaster(graph=graph, llm=llm)
-handler.query('can you give me the property of node RRH')
+handler.query('can you give me random drug')
