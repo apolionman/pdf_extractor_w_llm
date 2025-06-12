@@ -140,13 +140,58 @@ class Neo4jQueryMaster:
 
         Example:
             Question: What supplements are useful for a disease like Menkes?
-            Schema: Disease -> HAS_SYMPTOM -> Symptom <- MANAGED_BY <- Supplement
+            Schema: disease -> HAS_SYMPTOM -> symptom <- MANAGED_BY <- supplement
+
+            Question: What are the health conditions negatively affected by a high heart rate, and what lifestyle changes are recommended for those conditions?
+            Schema: Parameter
+                    ──[:ASSOCIATED_WITH]→
+                    Parameter_Value
+                    ──[:NEGATIVELY_AFFECT]→
+                    Health_Condition_Medical
+                    ──[:RECOMMENDED_LIFESTYLE_CHANGES]→
+                    Lifestyle
+
+            Question: What medical condition is negatively affected by low blood pressure, and what supplements are recommended for it?
+            Schema: Parameter
+                    ──[:ASSOCIATED_WITH]→
+                    Parameter_Value
+                    ──[:NEGATIVELY_AFFECT]→
+                    Health_Condition_Medical
+                    ──[:RECOMMENDED_SUPPLEMENTS]→
+                    Supplements
+                    
+            Question: What health condition is negatively affected by a short menstrual cycle, and what blood tests are recommended for it?
+            Schema: Parameter
+                    ──[:ASSOCIATED_WITH]→
+                    Parameter_Value
+                    ──[:NEGATIVELY_AFFECT]→
+                    Health_Condition_Medical
+                    ──[:RECOMMENDED_BLOOD_TESTS]→
+                    Blood_Tests
+
         Example Cypher Query:
-            MATCH (d:Disease)-[r1:HAS_SYMPTOM]->(s:Symptom)<-[r2:MANAGED_BY]-(supplement:Supplement)
+            MATCH (d:disease)-[r1:HAS_SYMPTOM]->(s:symptom)<-[r2:MANAGED_BY]-(supplement:supplement)
             WHERE d.name CONTAINS 'Menkes'
             RETURN DISTINCT supplement.name AS supplement
-            LIMIT 5
-            
+            LIMIT 10
+
+            MATCH (p:Parameter {name: "Heart Rate"})-[:ASSOCIATED_WITH]->(v:Parameter_Value {name: "High"})
+            MATCH (v)-[:NEGATIVELY_AFFECT]->(m:Health_Condition_Medical)
+            MATCH (m)-[:RECOMMENDED_LIFESTYLE_CHANGES]->(l:Lifestyle)
+            RETURN DISTINCT p.name AS parameter, v.name AS value, m.name AS condition, l.name AS recommended_lifestyle
+            LIMIT 10
+
+            MATCH (p:Parameter {name: "Blood Pressure"})-[:ASSOCIATED_WITH]->(v:Parameter_Value {name: "Low"})
+            MATCH (v)-[:NEGATIVELY_AFFECT]->(m:Health_Condition_Medical)
+            MATCH (m)-[:RECOMMENDED_SUPPLEMENTS]->(s:Supplements)
+            RETURN DISTINCT p.name AS parameter, v.name AS value, m.name AS condition, s.name AS recommended_supplement
+            LIMIT 10
+
+            MATCH (p:Parameter {name: "Menstrual Tracking"})-[:ASSOCIATED_WITH]->(v:Parameter_Value {name: "Short"})
+            MATCH (v)-[:NEGATIVELY_AFFECT]->(m:Health_Condition_Medical)
+            MATCH (m)-[:RECOMMENDED_BLOOD_TESTS]->(b:Blood_Tests)
+            RETURN DISTINCT p.name AS parameter, v.name AS value, m.name AS condition, b.name AS recommended_blood_test
+            LIMIT 10
         """
 
     def query(self, question: str) -> Dict[str, Any]:
