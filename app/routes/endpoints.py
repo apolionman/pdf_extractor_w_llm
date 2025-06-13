@@ -97,7 +97,7 @@ async def query_kgs(kg_conn: str,
             "last_accessed": datetime.now()
         }
 
-    response = await query_graph(kg_conn, query, session_id=session_id)
+    response = await query_graph(kg_conn, query, session_id)
 
     active_sessions[session_id]["last_accessed"] = datetime.now()
 

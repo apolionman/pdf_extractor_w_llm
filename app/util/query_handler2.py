@@ -12,7 +12,7 @@ class Neo4jQueryMaster:
         self._init_graph_connection(graph)
         self._init_llm(llm)
         self._cache_schema()
-        self.memory = memory or ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+        self.memory = memory or ConversationBufferMemory(memory_key="chat_history", return_messages=True, input_key="query")
         self._setup_query_chain()
 
     def _init_graph_connection(self, graph):
@@ -224,7 +224,6 @@ class Neo4jQueryMaster:
             "schema_info": self.schema_info,
             "node_labels": self.node_labels,
             "relationship_types": self.relationship_types,
-            "chat_history": self.memory
         }
 
         result = self.chain.invoke(inputs)
