@@ -119,6 +119,9 @@ class Neo4jQueryMaster:
 
     def _get_prompt_template(self) -> str:
         return """
+        Chat History (for context only):
+        {chat_history}
+
         You are a Neo4j Cypher expert. Generate ONLY the Cypher query to answer the question.
 
         Rules:
@@ -220,7 +223,8 @@ class Neo4jQueryMaster:
             "query": question,
             "schema_info": self.schema_info,
             "node_labels": self.node_labels,
-            "relationship_types": self.relationship_types
+            "relationship_types": self.relationship_types,
+            "chat_history": self.memory
         }
 
         result = self.chain.invoke(inputs)
