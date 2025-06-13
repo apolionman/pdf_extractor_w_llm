@@ -90,15 +90,21 @@ class Neo4jQueryMaster:
 
     def _setup_query_chain(self):
         """Configure the query chain with proper input variables"""
-        self.cypher_prompt = PromptTemplate(
-            input_variables=["question", 
-                             "schema_info", 
-                             "node_labels", 
-                             "relationship_types",
-                             "chat_history"
-                             ],
+        prompt_template_str = self._get_prompt_template()
 
-            template=self._get_prompt_template()
+        self.cypher_prompt = PromptTemplate(
+            template=prompt_template_str,
+            # The only runtime inputs needed are the query and history.
+            input_variables=["query", "chat_history"],
+            # The rest of the variables are pre-filled.
+            partial_variables={
+                "schema_info": self.schema_info,
+                "node_labels": ", ".join(sorted(self.node_labels)),
+                "relationship_types": ", ".join(sorted([
+                    f"({', '.join(from_labels)})-[:{rel_type}]->({', '.join(to_labels)})"
+                    for from_labels, rel_type, to_labels in self.relationship_types
+                ]))
+            }
         )
         
         self.chain = GraphCypherQAChain.from_llm(
@@ -118,6 +124,7 @@ class Neo4jQueryMaster:
         )
 
     def _get_prompt_template(self) -> str:
+        # Note the change from {question} to {query}
         return """
         Chat History (for context only):
         {chat_history}
@@ -159,7 +166,7 @@ class Neo4jQueryMaster:
         Schema Info:
         {schema_info}
 
-        Question: {question}
+        Question: {query}
 
         Cypher Query:
 
@@ -219,11 +226,9 @@ class Neo4jQueryMaster:
         """
 
     def query(self, question: str) -> Dict[str, Any]:
+        # The input dictionary now only needs the key that the prompt expects.
         inputs = {
             "query": question,
-            "schema_info": self.schema_info,
-            "node_labels": self.node_labels,
-            "relationship_types": self.relationship_types,
         }
 
         result = self.chain.invoke(inputs)
@@ -235,7 +240,6 @@ class Neo4jQueryMaster:
         }
 
         return structured_result
-
 
     def _try_llm_query(self, question: str) -> Optional[Dict[str, Any]]:
         """Attempt to use LLM-generated query"""
