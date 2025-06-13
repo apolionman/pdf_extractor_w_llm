@@ -177,7 +177,7 @@ class Neo4jQueryMaster:
             Schema: Parameter-[:ASSOCIATED_WITH]->Parameter_Value-[:NEGATIVELY_AFFECT]->Health_Condition_Medical-[:RECOMMENDED_SUPPLEMENTS]->Supplements
         Example Cypher Query:
             MATCH (p:Parameter)-[:ASSOCIATED_WITH]->(v:Parameter_Value)
-            WHERE p.name CONTAINS 'Blood Pressure' AND v.name CONTAINS 'Low'
+            WHERE (p.name CONTAINS 'Blood Pressure' OR p.name CONTAINS 'Blood') AND v.name CONTAINS 'Low'
             MATCH (v)-[:NEGATIVELY_AFFECT]->(m:Health_Condition_Medical)
             MATCH (m)-[:RECOMMENDED_SUPPLEMENTS]->(s:Supplements)
             RETURN DISTINCT p.name AS parameter, v.name AS value, m.name AS condition, s.name AS recommended_supplement
@@ -188,7 +188,7 @@ class Neo4jQueryMaster:
             Schema: Parameter-[:ASSOCIATED_WITH]->Parameter_Value-[:NEGATIVELY_AFFECT]->Health_Condition_Medical-[:RECOMMENDED_BLOOD_TESTS]->Blood_Tests
         Example Cypher Query:
             MATCH (p:Parameter)-[:ASSOCIATED_WITH]->(v:Parameter_Value)
-            WHERE p.name CONTAINS 'Menstrual Tracking' AND v.name CONTAINS 'Short'
+            WHERE (p.name CONTAINS 'Menstrual Tracking' OR p.name CONTAINS 'Menstrual') AND v.name CONTAINS 'Short'
             MATCH (v)-[:NEGATIVELY_AFFECT]->(m:Health_Condition_Medical)
             MATCH (m)-[:RECOMMENDED_BLOOD_TESTS]->(b:Blood_Tests)
             RETURN DISTINCT p.name AS parameter, v.name AS value, m.name AS condition, b.name AS recommended_blood_test
@@ -199,7 +199,7 @@ class Neo4jQueryMaster:
             Schema: Parameter-[:ASSOCIATED_WITH]->Parameter_Value-[:NEGATIVELY_AFFECT]->Health_Condition_Medical-[:RECOMMENDED_LIFESTYLE_CHANGES]->Lifestyle
         Example Cypher Query:
             MATCH (p:Parameter)-[:ASSOCIATED_WITH]->(v:Parameter_Value)
-            WHERE p.name CONTAINS 'Sleep Tracking' AND v.name CONTAINS 'Low'
+            WHERE (p.name CONTAINS 'Sleep Tracking' OR p.name CONTAINS 'Sleep') AND v.name CONTAINS 'Low'
             MATCH (v)-[:NEGATIVELY_AFFECT]->(m:Health_Condition_Medical)
             MATCH (m)-[:RECOMMENDED_LIFESTYLE_CHANGES]->(l:Lifestyle)
             RETURN DISTINCT p.name AS parameter, v.name AS value, m.name AS condition, l.name AS recommended_lifestyle
