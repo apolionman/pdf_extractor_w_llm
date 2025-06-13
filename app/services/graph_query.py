@@ -7,6 +7,14 @@ from app.util.query_handler import *
 from typing import Generator
 import os, json
 from dotenv import load_dotenv
+from langchain.memory import ConversationBufferMemory
+from collections import defaultdict
+
+session_memories = defaultdict(lambda: ConversationBufferMemory(memory_key="chat_history", return_messages=True))
+
+def get_session_memory(session_id: str) -> ConversationBufferMemory:
+    return session_memories[session_id]
+
 load_dotenv('.env')
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL")
 LLM_MODEL = "gemma3:27b"
@@ -41,7 +49,7 @@ def stream_response(data: dict) -> Generator[bytes, None, None]:
         """Yields data as a stream in JSON format"""
         yield json.dumps(data, indent=2).encode("utf-8")
 
-async def query_graph(kg_conn: str, query: str):
+async def query_graph(kg_conn: str, query: str, session_id: str = "default"):
     if kg_conn not in KG_DICT:
         raise ValueError(f"Invalid kg_conn name: {kg_conn}. Must be one of: {list(KG_DICT.keys())}")
 
@@ -53,7 +61,9 @@ async def query_graph(kg_conn: str, query: str):
         password=config["password"]
     )
 
-    handler = Neo4jQueryMaster(graph=graph, llm=llm)
+    memory = get_session_memory(session_id)
+
+    handler = Neo4jQueryMaster(graph=graph, llm=llm, memory=memory)
 
     result = handler.query(query)
     

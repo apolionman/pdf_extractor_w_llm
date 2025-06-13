@@ -5,6 +5,9 @@ from openai import OpenAI
 from app.services.llm_extract import *
 from app.services.graph_query import *
 import tempfile, os, httpx, asyncio, subprocess, whisper
+from uuid import uuid4
+from datetime import datetime, timedelta
+from apscheduler.schedulers.background import BackgroundScheduler
 
 OLLAMA_URL = os.getenv("OLLAMA_BASE_URL")
 stt = whisper.load_model("large")
@@ -80,10 +83,37 @@ async def generate(request: Request):
 
     return StreamingResponse(stream_response(), media_type="application/json")
 
+active_sessions = {}
+
 @router.post("/query-graph")
-async def query_kgs(kg_conn: str, query=str):
-    response = await query_graph(kg_conn, query)
-    return JSONResponse(content=response, media_type="application/json")
+async def query_kgs(kg_conn: str, 
+                    query=str,
+                    session_id: Optional[str] = None
+                    ):
+    if not session_id or session_id not in active_sessions:
+        session_id = str(uuid4())
+        active_sessions[session_id] = {
+            "created_at": datetime.now(),
+            "last_accessed": datetime.now()
+        }
+
+    response = await query_graph(kg_conn, query, session_id=session_id)
+
+    active_sessions[session_id]["last_accessed"] = datetime.now()
+
+    return {
+        "session_id": session_id,
+        "response": response
+    }
+
+@router.post("/clear-session")
+async def clear_session(session_id: str):
+    if session_id in active_sessions:
+        del active_sessions[session_id]
+        if session_id in session_memories:
+            del session_memories[session_id]
+        return {"status": "session cleared"}
+    return {"status": "session not found"}
 
 ALLOWED_TYPES = {
     "audio/mpeg", "audio/webm", "video/mp4",
@@ -146,3 +176,20 @@ async def transcribe_audio(
         for path in [input_tmp.name if input_tmp else None, wav_path]:
             if path and os.path.exists(path):
                 os.remove(path)
+
+## OTHER EP
+def clean_expired_sessions():
+    expiry = timedelta(hours=2)
+    now = datetime.now()
+    expired = [sid for sid, sess in active_sessions.items() 
+               if now - sess["last_accessed"] > expiry]
+    
+    for sid in expired:
+        del active_sessions[sid]
+        if sid in session_memories:
+            del session_memories[sid]
+
+# Initialize scheduler
+scheduler = BackgroundScheduler()
+scheduler.add_job(clean_expired_sessions, 'interval', hours=1)
+scheduler.start()

@@ -2,15 +2,17 @@ from langchain.graphs import Neo4jGraph
 from langchain.chains import GraphCypherQAChain
 from langchain_ollama import OllamaLLM
 from langchain_core.prompts.prompt import PromptTemplate
+from langchain.memory import ConversationBufferMemory
 import re, json, os
 from neo4j.exceptions import CypherSyntaxError, ClientError
 from typing import Dict, Any, List, Optional, Tuple
 
 class Neo4jQueryMaster:
-    def __init__(self, graph, llm):
+    def __init__(self, graph, llm, memory=None):
         self._init_graph_connection(graph)
         self._init_llm(llm)
         self._cache_schema()
+        self.memory = memory or ConversationBufferMemory(memory_key="chat_history", return_messages=True)
         self._setup_query_chain()
 
     def _init_graph_connection(self, graph):
@@ -89,7 +91,12 @@ class Neo4jQueryMaster:
     def _setup_query_chain(self):
         """Configure the query chain with proper input variables"""
         self.cypher_prompt = PromptTemplate(
-            input_variables=["question", "schema_info", "node_labels", "relationship_types"],
+            input_variables=["question", 
+                             "schema_info", 
+                             "node_labels", 
+                             "relationship_types",
+                             "chat_history"
+                             ],
 
             template=self._get_prompt_template()
         )
@@ -98,6 +105,7 @@ class Neo4jQueryMaster:
             llm=self.llm,
             temperature=0.0,
             graph=self.graph,
+            memory=self.memory, 
             cypher_prompt=self.cypher_prompt,
             verbose=True,
             validate_cypher=True,
