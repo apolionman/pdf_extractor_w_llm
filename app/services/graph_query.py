@@ -3,7 +3,7 @@ from langchain.chains import GraphCypherQAChain
 from langchain_ollama import OllamaLLM
 from langchain_core.prompts.prompt import PromptTemplate
 from fastapi.responses import StreamingResponse
-from app.util.query_handler import *
+from app.util.query_handler2 import *
 from typing import Generator
 import os, json
 from dotenv import load_dotenv
