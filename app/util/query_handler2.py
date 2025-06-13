@@ -223,6 +223,35 @@ class Neo4jQueryMaster:
             RETURN DISTINCT p.name AS parameter, v.name AS value, m.name AS condition, l.name AS recommended_lifestyle
             LIMIT 10
 
+        Example:
+            Question: What supplement can help reduce stress and improve cognitive function for an adult female with depression and fatigue without conflicting with imipramine?
+            Schema: supplement-[:MANAGES]->symptom-[:MANAGES]->symptom<-[:SUPPORTED_BY]-goal<-[:HIGHER_NEED]-gender<-[:REQUIRES]-age<-[:CONTRAINDICATION_WITH]-drug<-[:AVOID]-medical_condition
+        Example Cypher Query:
+            // Match supplement
+            MATCH (s:supplement)
+            // Symptoms: stress and fatigue
+            MATCH (s)-[:MANAGES]->(symptom1:symptom)
+            MATCH (s)-[:MANAGES]->(symptom2:symptom)
+            // Goal: cognitive function
+            MATCH (goal:goal)-[:SUPPORTED_BY]->(s)
+            // Gender: female
+            MATCH (gender:gender)-[:HIGHER_NEED]->(s)
+            // Age: adult
+            MATCH (age:age)-[:REQUIRES]->(s)
+            // Optional: drug and medical condition to exclude
+            OPTIONAL MATCH (drug:drug)-[:CONTRAINDICATION_WITH]->(s)
+            OPTIONAL MATCH (condition:medical_condition)-[:AVOID]->(s)
+            // Apply filters
+            WHERE toLower(symptom1.name) CONTAINS "stress"
+            AND toLower(symptom2.name) CONTAINS "fatigue"
+            AND toLower(goal.name) CONTAINS "cognitive"
+            AND toLower(gender.name) CONTAINS "female"
+            AND toLower(age.name) CONTAINS "adult"
+            AND (drug IS NULL OR NOT toLower(drug.name) CONTAINS "imipramine")
+            AND (condition IS NULL OR NOT toLower(condition.name) CONTAINS "depression")
+            RETURN DISTINCT s.name AS Recommended_Supplements
+            LIMIT 10
+
         """
 
     def query(self, question: str) -> Dict[str, Any]:

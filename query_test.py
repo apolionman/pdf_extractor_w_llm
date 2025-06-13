@@ -3,11 +3,19 @@ from langchain.chains import GraphCypherQAChain
 from langchain_ollama import OllamaLLM
 from langchain_core.prompts.prompt import PromptTemplate
 from fastapi.responses import StreamingResponse
+from langchain.memory import ConversationBufferMemory
+from collections import defaultdict
 from app.util.query_handler2 import Neo4jQueryMaster
 from typing import Generator
 import os, json
 from dotenv import load_dotenv
 load_dotenv('.env')
+
+session_memories = defaultdict(lambda: ConversationBufferMemory(memory_key="chat_history", return_messages=True))
+
+def get_session_memory(session_id: str) -> ConversationBufferMemory:
+    return session_memories[session_id]
+
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL")
 LLM_MODEL = "gemma3:27b"
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL")
@@ -34,13 +42,13 @@ KG_DICT = {
         "password": "wear007!"
     }
 }
-config = KG_DICT['prime_kg']
+config = KG_DICT['wear_kg']
 graph = Neo4jGraph(
     url=config["url"],
     username=config["username"],
     password=config["password"]
 )
+memory = get_session_memory("default")
 
-
-handler = Neo4jQueryMaster(graph=graph, llm=llm)
-handler.query('can you give me 1 drug name?')
+handler = Neo4jQueryMaster(graph=graph, llm=llm, memory=memory)
+handler.query('What health condition is negatively affected by a short menstrual cycle, and what blood tests are recommended for it?')
