@@ -42,7 +42,7 @@ KG_DICT = {
         "password": "wear007!"
     }
 }
-config = KG_DICT['wear_kg']
+config = KG_DICT['supplement_kg']
 graph = Neo4jGraph(
     url=config["url"],
     username=config["username"],
@@ -51,4 +51,4 @@ graph = Neo4jGraph(
 memory = get_session_memory("default")
 
 handler = Neo4jQueryMaster(graph=graph, llm=llm, memory=memory)
-handler.query('What health condition is negatively affected by a short menstrual cycle, and what blood tests are recommended for it?')
+handler.query('What supplement can help increase stress and degrade cognitive function for an adult female with depression and fatigue without conflicting with imipramine?')

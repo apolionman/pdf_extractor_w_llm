@@ -50,10 +50,19 @@
     ]
   }
 
-curl http://localhost:11434/api/generate -d '{
+  docker run -d \
+  --name ollama \
+  --privileged \
+  -p 11434:11434 \
+  -v ollama:/root/.ollama \
+  --gpus '"device=0,1,2,3"' \
+  ollama/ollama
+
+
+curl http://94.202.21.171:11434/api/generate -d '{
     "model": "gemma3:27b",
     "prompt": "What is your latest trained date? when did it start and when did it finished?",
-    "stream": true
+    "stream": false
     }'
 
     nodes = [n['name'] for n in result['nodes'] if 'name' in n]
@@ -68,3 +77,42 @@ curl http://localhost:11434/api/generate -d '{
     }
     for r in result['relationships']
 ]
+
+MATCH (a:age)-[:REQUIRES]->(s:supplement)
+MATCH (g:gender)-[:HIGHER_NEED]->(s)
+MATCH (d:diet)-[:MAY_LACK]->(s)
+MATCH (s)-[:MANAGES]->(sym:symptom)
+MATCH (s)-[:MANAGES]->(sym2:symptom)
+WHERE toLower(a.name) CONTAINS 'middle-aged'
+AND toLower(g.name) CONTAINS 'female'
+AND toLower(d.name) CONTAINS 'vegan'
+AND toLower(sym.name) CONTAINS 'fatigue'
+AND toLower(sym2.name) CONTAINS 'iron deficiency'
+RETURN DISTINCT s.name AS supplement
+LIMIT 10
+
+MATCH (gender:gender)-[:HIGHER_NEED]->(s:supplement)
+MATCH (s)-[:MANAGES]->(symptom:symptom)
+MATCH (bmi:body_mass_index)-[:MAY_NEED]->(s)
+WHERE toLower(gender.name) CONTAINS 'female'
+AND toLower(symptom.name) CONTAINS 'headache'
+AND toLower(bmi.name) CONTAINS 'overweight'
+RETURN DISTINCT s.name AS supplement
+LIMIT 10
+
+MATCH (p:Parameter)-[:ASSOCIATED_WITH]->(v:Parameter_Value)
+WHERE p.name CONTAINS 'Heart Rate' AND v.name CONTAINS 'High'
+MATCH (v)-[:NEGATIVELY_AFFECT]->(m:Health_Condition_Medical)
+MATCH (m)-[:RECOMMENDED_LIFESTYLE_CHANGES]->(l:Lifestyle)
+RETURN DISTINCT p.name AS parameter, v.name AS value, m.name AS condition, l.name AS recommended_lifestyle
+LIMIT 10
+
+
+If 2 parameters are search it gives output for both of it separately
+If the query 
+
+
+
+NEXT_PUBLIC_SUPABASE_URL=https://pnsopxluxcawntquoksn.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+            
